@@ -95,6 +95,8 @@ func (c *ApplyCommand) Run(args []string) int {
 		}
 	}
 
+	terraform.SetDebugInfo(DefaultDataDir)
+
 	// Check for the new apply
 	if terraform.X_newApply {
 		desc := "Experimental new apply graph has been enabled. This may still\n" +
