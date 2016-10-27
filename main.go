@@ -87,9 +87,8 @@ func realMain() int {
 }
 
 func wrappedMain() int {
-	// We always need to close the DebugInfo before we exit, but it's not set
-	// yet, so we need to wrap it in a function.
-	defer func() { terraform.DebugInfo.Close() }()
+	// We always need to close the DebugInfo before we exit.
+	defer terraform.CloseDebugInfo()
 
 	log.SetOutput(os.Stderr)
 	log.Printf(

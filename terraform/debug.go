@@ -6,6 +6,7 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"sync"
@@ -15,7 +16,7 @@ import (
 // DebugInfo is the global handler for writing the debug archive. All methods
 // are safe to call concurrently. Setting DebugInfo to nil will disable writing
 // the debug archive. All methods are safe to call on the nil value.
-var DebugInfo *debugInfo
+var debug *debugInfo
 
 // SetDebugInfo sets the debug options for the terraform package. Currently
 // this just sets the path where the archive will be written.
@@ -24,16 +25,20 @@ func SetDebugInfo(path string) error {
 		return nil
 	}
 
-	di, err := newDebugInfo(path)
+	di, err := newDebugInfoFile(path)
 	if err != nil {
 		return err
 	}
 
-	DebugInfo = di
+	debug = di
 	return nil
 }
 
-func newDebugInfo(dir string) (*debugInfo, error) {
+func CloseDebugInfo() error {
+	return debug.Close()
+}
+
+func newDebugInfoFile(dir string) (*debugInfo, error) {
 	err := os.MkdirAll(dir, 0755)
 	if err != nil {
 		return nil, err
@@ -47,12 +52,15 @@ func newDebugInfo(dir string) (*debugInfo, error) {
 	if err != nil {
 		return nil, err
 	}
+	return newDebugInfo(name, f)
+}
 
-	gz := gzip.NewWriter(f)
+func newDebugInfo(name string, w io.Writer) (*debugInfo, error) {
+	gz := gzip.NewWriter(w)
 
 	d := &debugInfo{
 		name:       name,
-		file:       f,
+		w:          w,
 		compressor: gz,
 		archive:    tar.NewWriter(gz),
 	}
@@ -67,15 +75,18 @@ func newDebugInfo(dir string) (*debugInfo, error) {
 		Typeflag: tar.TypeDir,
 		Mode:     0755,
 	}
-	err = d.archive.WriteHeader(topHdr)
+	err := d.archive.WriteHeader(topHdr)
 	// if the first errors, the second will too
 	err = d.archive.WriteHeader(graphsHdr)
 	if err != nil {
-		f.Close()
 		return nil, err
 	}
 
 	return d, nil
+}
+
+type syncer interface {
+	Sync() error
 }
 
 type debugInfo struct {
@@ -94,7 +105,7 @@ type debugInfo struct {
 	closed bool
 
 	// the debug log output goes here
-	file       *os.File
+	w          io.Writer
 	compressor *gzip.Writer
 	archive    *tar.Writer
 }
@@ -124,14 +135,21 @@ func (d *debugInfo) Close() error {
 
 	d.archive.Close()
 	d.compressor.Close()
-	return d.file.Close()
+
+	if c, ok := d.w.(io.Closer); ok {
+		return c.Close()
+	}
+	return nil
 }
 
 // make sure things are always flushed in the correct order
 func (d *debugInfo) flush() {
 	d.archive.Flush()
 	d.compressor.Flush()
-	d.file.Sync()
+
+	if s, ok := d.w.(syncer); ok {
+		s.Sync()
+	}
 }
 
 // Write the current graph state to the debug log in dot format.
@@ -226,7 +244,7 @@ func (*DebugHook) PreApply(ii *InstanceInfo, is *InstanceState, id *InstanceDiff
 	}
 	buf.Write(js)
 
-	DebugInfo.WriteFile("hook-PreApply", buf.Bytes())
+	debug.WriteFile("hook-PreApply", buf.Bytes())
 
 	return HookActionContinue, nil
 }
@@ -246,7 +264,7 @@ func (*DebugHook) PostApply(ii *InstanceInfo, is *InstanceState, err error) (Hoo
 		buf.WriteString(err.Error())
 	}
 
-	DebugInfo.WriteFile("hook-PostApply", buf.Bytes())
+	debug.WriteFile("hook-PostApply", buf.Bytes())
 
 	return HookActionContinue, nil
 }
@@ -261,7 +279,7 @@ func (*DebugHook) PreDiff(ii *InstanceInfo, is *InstanceState) (HookAction, erro
 		buf.WriteString(is.String())
 		buf.WriteString("\n")
 	}
-	DebugInfo.WriteFile("hook-PreDiff", buf.Bytes())
+	debug.WriteFile("hook-PreDiff", buf.Bytes())
 
 	return HookActionContinue, nil
 }
@@ -282,7 +300,7 @@ func (*DebugHook) PostDiff(ii *InstanceInfo, id *InstanceDiff) (HookAction, erro
 	}
 	buf.Write(js)
 
-	DebugInfo.WriteFile("hook-PostDiff", buf.Bytes())
+	debug.WriteFile("hook-PostDiff", buf.Bytes())
 
 	return HookActionContinue, nil
 }
@@ -297,7 +315,7 @@ func (*DebugHook) PreProvisionResource(ii *InstanceInfo, is *InstanceState) (Hoo
 		buf.WriteString(is.String())
 		buf.WriteString("\n")
 	}
-	DebugInfo.WriteFile("hook-PreProvisionResource", buf.Bytes())
+	debug.WriteFile("hook-PreProvisionResource", buf.Bytes())
 
 	return HookActionContinue, nil
 }
@@ -313,7 +331,7 @@ func (*DebugHook) PostProvisionResource(ii *InstanceInfo, is *InstanceState) (Ho
 		buf.WriteString(is.String())
 		buf.WriteString("\n")
 	}
-	DebugInfo.WriteFile("hook-PostProvisionResource", buf.Bytes())
+	debug.WriteFile("hook-PostProvisionResource", buf.Bytes())
 	return HookActionContinue, nil
 }
 
@@ -325,7 +343,7 @@ func (*DebugHook) PreProvision(ii *InstanceInfo, s string) (HookAction, error) {
 	}
 	buf.WriteString(s + "\n")
 
-	DebugInfo.WriteFile("hook-PreProvision", buf.Bytes())
+	debug.WriteFile("hook-PreProvision", buf.Bytes())
 	return HookActionContinue, nil
 }
 
@@ -336,7 +354,7 @@ func (*DebugHook) PostProvision(ii *InstanceInfo, s string) (HookAction, error) 
 	}
 	buf.WriteString(s + "\n")
 
-	DebugInfo.WriteFile("hook-PostProvision", buf.Bytes())
+	debug.WriteFile("hook-PostProvision", buf.Bytes())
 	return HookActionContinue, nil
 }
 
@@ -349,7 +367,7 @@ func (*DebugHook) ProvisionOutput(ii *InstanceInfo, s1 string, s2 string) {
 	buf.WriteString(s1 + "\n")
 	buf.WriteString(s2 + "\n")
 
-	DebugInfo.WriteFile("hook-ProvisionOutput", buf.Bytes())
+	debug.WriteFile("hook-ProvisionOutput", buf.Bytes())
 }
 
 func (*DebugHook) PreRefresh(ii *InstanceInfo, is *InstanceState) (HookAction, error) {
@@ -362,7 +380,7 @@ func (*DebugHook) PreRefresh(ii *InstanceInfo, is *InstanceState) (HookAction, e
 		buf.WriteString(is.String())
 		buf.WriteString("\n")
 	}
-	DebugInfo.WriteFile("hook-PreRefresh", buf.Bytes())
+	debug.WriteFile("hook-PreRefresh", buf.Bytes())
 	return HookActionContinue, nil
 }
 
@@ -377,7 +395,7 @@ func (*DebugHook) PostRefresh(ii *InstanceInfo, is *InstanceState) (HookAction, 
 		buf.WriteString(is.String())
 		buf.WriteString("\n")
 	}
-	DebugInfo.WriteFile("hook-PostRefresh", buf.Bytes())
+	debug.WriteFile("hook-PostRefresh", buf.Bytes())
 	return HookActionContinue, nil
 }
 
@@ -389,7 +407,7 @@ func (*DebugHook) PreImportState(ii *InstanceInfo, s string) (HookAction, error)
 	}
 	buf.WriteString(s + "\n")
 
-	DebugInfo.WriteFile("hook-PreImportState", buf.Bytes())
+	debug.WriteFile("hook-PreImportState", buf.Bytes())
 	return HookActionContinue, nil
 }
 
@@ -405,7 +423,7 @@ func (*DebugHook) PostImportState(ii *InstanceInfo, iss []*InstanceState) (HookA
 			buf.WriteString(is.String() + "\n")
 		}
 	}
-	DebugInfo.WriteFile("hook-PostImportState", buf.Bytes())
+	debug.WriteFile("hook-PostImportState", buf.Bytes())
 	return HookActionContinue, nil
 }
 

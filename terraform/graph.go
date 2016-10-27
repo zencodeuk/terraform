@@ -211,7 +211,7 @@ func (g *Graph) Walk(walker GraphWalker) error {
 		log.Printf("[ERROR] %v", err)
 	}
 	g.debugGraph = debugGraph
-	defer DebugInfo.WriteGraph(debugGraph)
+	defer debug.WriteGraph(debugGraph)
 
 	return g.walk(walker)
 }

@@ -252,8 +252,8 @@ func (c *Context) Input(mode InputMode) error {
 	v := c.acquireRun()
 	defer c.releaseRun(v)
 
-	DebugInfo.SetPhase("input")
-	defer DebugInfo.SetPhase("")
+	debug.SetPhase("input")
+	defer debug.SetPhase("")
 
 	if mode&InputModeVar != 0 {
 		// Walk the variables first for the root module. We walk them in
@@ -375,8 +375,8 @@ func (c *Context) Apply() (*State, error) {
 	v := c.acquireRun()
 	defer c.releaseRun(v)
 
-	DebugInfo.SetPhase("apply")
-	defer DebugInfo.SetPhase("")
+	debug.SetPhase("apply")
+	defer debug.SetPhase("")
 
 	// Copy our own state
 	c.state = c.state.DeepCopy()
@@ -479,8 +479,8 @@ func (c *Context) Plan() (*Plan, error) {
 	v := c.acquireRun()
 	defer c.releaseRun(v)
 
-	DebugInfo.SetPhase("plan")
-	defer DebugInfo.SetPhase("")
+	debug.SetPhase("plan")
+	defer debug.SetPhase("")
 
 	p := &Plan{
 		Module:  c.module,
@@ -579,8 +579,8 @@ func (c *Context) Refresh() (*State, error) {
 	v := c.acquireRun()
 	defer c.releaseRun(v)
 
-	DebugInfo.SetPhase("refresh")
-	defer DebugInfo.SetPhase("")
+	debug.SetPhase("refresh")
+	defer debug.SetPhase("")
 
 	// Copy our own state
 	c.state = c.state.DeepCopy()
@@ -628,8 +628,8 @@ func (c *Context) Validate() ([]string, []error) {
 	v := c.acquireRun()
 	defer c.releaseRun(v)
 
-	DebugInfo.SetPhase("validate")
-	defer DebugInfo.SetPhase("")
+	debug.SetPhase("validate")
+	defer debug.SetPhase("")
 
 	var errs error
 

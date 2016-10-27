@@ -46,7 +46,7 @@ func (b *BasicGraphBuilder) Build(path []string) (*Graph, error) {
 		if err != nil {
 			log.Printf("[ERROR] %v", err)
 		}
-		DebugInfo.WriteGraph(dg)
+		debug.WriteGraph(dg)
 	}
 
 	// Validate the graph structure
