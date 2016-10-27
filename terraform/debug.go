@@ -14,7 +14,7 @@ import (
 
 // DebugInfo is the global handler for writing the debug archive. All methods
 // are safe to call concurrently. Setting DebugInfo to nil will disable writing
-// the debug archive. All methods are safe to call in the nil value.
+// the debug archive. All methods are safe to call on the nil value.
 var DebugInfo *debugInfo
 
 // SetDebugInfo sets the debug options for the terraform package. Currently
@@ -409,7 +409,7 @@ func (*DebugHook) PostImportState(ii *InstanceInfo, iss []*InstanceState) (HookA
 	return HookActionContinue, nil
 }
 
-// skip logging this, since it could be huge
+// skip logging this for now, since it could be huge
 func (*DebugHook) PostStateUpdate(*State) (HookAction, error) {
 	return HookActionContinue, nil
 }

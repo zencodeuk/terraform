@@ -42,10 +42,6 @@ func (b *BasicGraphBuilder) Build(path []string) (*Graph, error) {
 			stepName = stepName[dot+1:]
 		}
 
-		log.Printf(
-			"[TRACE] Graph after step %s:\n\n%s",
-			stepName, g.StringWithNodeTypes())
-
 		dg, err := NewDebugGraph("build-"+stepName, g, nil)
 		if err != nil {
 			log.Printf("[ERROR] %v", err)
