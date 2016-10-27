@@ -224,6 +224,10 @@ func (d *debugInfo) writeFile(name string, data []byte) error {
 type DebugHook struct{}
 
 func (*DebugHook) PreApply(ii *InstanceInfo, is *InstanceState, id *InstanceDiff) (HookAction, error) {
+	if debug == nil {
+		return HookActionContinue, nil
+	}
+
 	var buf bytes.Buffer
 
 	if ii != nil {
@@ -250,6 +254,10 @@ func (*DebugHook) PreApply(ii *InstanceInfo, is *InstanceState, id *InstanceDiff
 }
 
 func (*DebugHook) PostApply(ii *InstanceInfo, is *InstanceState, err error) (HookAction, error) {
+	if debug == nil {
+		return HookActionContinue, nil
+	}
+
 	var buf bytes.Buffer
 
 	if ii != nil {
@@ -270,6 +278,10 @@ func (*DebugHook) PostApply(ii *InstanceInfo, is *InstanceState, err error) (Hoo
 }
 
 func (*DebugHook) PreDiff(ii *InstanceInfo, is *InstanceState) (HookAction, error) {
+	if debug == nil {
+		return HookActionContinue, nil
+	}
+
 	var buf bytes.Buffer
 	if ii != nil {
 		buf.WriteString(ii.HumanId() + "\n")
@@ -285,6 +297,10 @@ func (*DebugHook) PreDiff(ii *InstanceInfo, is *InstanceState) (HookAction, erro
 }
 
 func (*DebugHook) PostDiff(ii *InstanceInfo, id *InstanceDiff) (HookAction, error) {
+	if debug == nil {
+		return HookActionContinue, nil
+	}
+
 	var buf bytes.Buffer
 	if ii != nil {
 		buf.WriteString(ii.HumanId() + "\n")
@@ -306,6 +322,10 @@ func (*DebugHook) PostDiff(ii *InstanceInfo, id *InstanceDiff) (HookAction, erro
 }
 
 func (*DebugHook) PreProvisionResource(ii *InstanceInfo, is *InstanceState) (HookAction, error) {
+	if debug == nil {
+		return HookActionContinue, nil
+	}
+
 	var buf bytes.Buffer
 	if ii != nil {
 		buf.WriteString(ii.HumanId() + "\n")
@@ -321,6 +341,10 @@ func (*DebugHook) PreProvisionResource(ii *InstanceInfo, is *InstanceState) (Hoo
 }
 
 func (*DebugHook) PostProvisionResource(ii *InstanceInfo, is *InstanceState) (HookAction, error) {
+	if debug == nil {
+		return HookActionContinue, nil
+	}
+
 	var buf bytes.Buffer
 	if ii != nil {
 		buf.WriteString(ii.HumanId())
@@ -336,6 +360,10 @@ func (*DebugHook) PostProvisionResource(ii *InstanceInfo, is *InstanceState) (Ho
 }
 
 func (*DebugHook) PreProvision(ii *InstanceInfo, s string) (HookAction, error) {
+	if debug == nil {
+		return HookActionContinue, nil
+	}
+
 	var buf bytes.Buffer
 	if ii != nil {
 		buf.WriteString(ii.HumanId())
@@ -348,6 +376,10 @@ func (*DebugHook) PreProvision(ii *InstanceInfo, s string) (HookAction, error) {
 }
 
 func (*DebugHook) PostProvision(ii *InstanceInfo, s string) (HookAction, error) {
+	if debug == nil {
+		return HookActionContinue, nil
+	}
+
 	var buf bytes.Buffer
 	if ii != nil {
 		buf.WriteString(ii.HumanId() + "\n")
@@ -359,6 +391,10 @@ func (*DebugHook) PostProvision(ii *InstanceInfo, s string) (HookAction, error) 
 }
 
 func (*DebugHook) ProvisionOutput(ii *InstanceInfo, s1 string, s2 string) {
+	if debug == nil {
+		return
+	}
+
 	var buf bytes.Buffer
 	if ii != nil {
 		buf.WriteString(ii.HumanId())
@@ -371,6 +407,10 @@ func (*DebugHook) ProvisionOutput(ii *InstanceInfo, s1 string, s2 string) {
 }
 
 func (*DebugHook) PreRefresh(ii *InstanceInfo, is *InstanceState) (HookAction, error) {
+	if debug == nil {
+		return HookActionContinue, nil
+	}
+
 	var buf bytes.Buffer
 	if ii != nil {
 		buf.WriteString(ii.HumanId() + "\n")
@@ -385,6 +425,10 @@ func (*DebugHook) PreRefresh(ii *InstanceInfo, is *InstanceState) (HookAction, e
 }
 
 func (*DebugHook) PostRefresh(ii *InstanceInfo, is *InstanceState) (HookAction, error) {
+	if debug == nil {
+		return HookActionContinue, nil
+	}
+
 	var buf bytes.Buffer
 	if ii != nil {
 		buf.WriteString(ii.HumanId())
@@ -400,6 +444,10 @@ func (*DebugHook) PostRefresh(ii *InstanceInfo, is *InstanceState) (HookAction, 
 }
 
 func (*DebugHook) PreImportState(ii *InstanceInfo, s string) (HookAction, error) {
+	if debug == nil {
+		return HookActionContinue, nil
+	}
+
 	var buf bytes.Buffer
 	if ii != nil {
 		buf.WriteString(ii.HumanId())
@@ -412,6 +460,10 @@ func (*DebugHook) PreImportState(ii *InstanceInfo, s string) (HookAction, error)
 }
 
 func (*DebugHook) PostImportState(ii *InstanceInfo, iss []*InstanceState) (HookAction, error) {
+	if debug == nil {
+		return HookActionContinue, nil
+	}
+
 	var buf bytes.Buffer
 
 	if ii != nil {
