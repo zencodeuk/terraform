@@ -66,7 +66,8 @@ func newDebugInfo(name string, w io.Writer) (*debugInfo, error) {
 	}
 
 	// create the subdirs we need
-	topHdr := &tar.Header{Name: name,
+	topHdr := &tar.Header{
+		Name:     name,
 		Typeflag: tar.TypeDir,
 		Mode:     0755,
 	}

@@ -109,7 +109,7 @@ func (dg *DebugGraph) DebugNode(v interface{}) {
 
 	// for now, record the order of visits in the node label
 	if node != nil {
-		node.Attrs["label"] = fmt.Sprintf("%d %s", ord, node.Attrs["label"])
+		node.Attrs["label"] = fmt.Sprintf("%s %d", node.Attrs["label"], ord)
 	}
 
 	// if the node provides debug output, insert it into the graph, and log it
