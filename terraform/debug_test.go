@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"regexp"
+	"strings"
 	"testing"
 )
 
@@ -78,6 +79,75 @@ func TestDebugInfo_basicFile(t *testing.T) {
 
 	for k := range fileData {
 		t.Fatalf("didn't find file %s", k)
+	}
+}
+
+// Test that we get logs and graphs from a walk. We're not looking for anything
+// specific, since the output is going to change in the near future.
+func TestDebug_plan(t *testing.T) {
+	var out bytes.Buffer
+	d, err := newDebugInfo("test-debug-info", &out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// set the global debug value
+	debug = d
+
+	// run a basic plan
+	m := testModule(t, "plan-good")
+	p := testProvider("aws")
+	p.DiffFn = testDiffFn
+	ctx := testContext2(t, &ContextOpts{
+		Module: m,
+		Providers: map[string]ResourceProviderFactory{
+			"aws": testProviderFuncFixed(p),
+		},
+	})
+
+	_, err = ctx.Plan()
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	err = CloseDebugInfo()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	gz, err := gzip.NewReader(&out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tr := tar.NewReader(gz)
+
+	files := 0
+	graphs := 0
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// record any file that contains data
+		if hdr.Size > 0 {
+			files++
+
+			// and any dot graph with data
+			if strings.HasSuffix(hdr.Name, ".dot") {
+				graphs++
+			}
+		}
+	}
+
+	if files == 0 {
+		t.Fatal("no files with data found")
+	}
+
+	if graphs == 0 {
+		t.Fatal("no no-empty graphs found")
 	}
 }
 
