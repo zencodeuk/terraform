@@ -36,6 +36,7 @@ func (b *BasicGraphBuilder) Build(path []string) (*Graph, error) {
 			return g, err
 		}
 
+		// record the debug graph for this transformation
 		stepName := fmt.Sprintf("%T", step)
 		dot := strings.LastIndex(stepName, ".")
 		if dot >= 0 {

@@ -23,8 +23,8 @@ type DebugGraph struct {
 	sync.Mutex
 	Name string
 
-	step int
-	buf  bytes.Buffer
+	ord int
+	buf bytes.Buffer
 
 	Dot     *dot.Graph
 	dotOpts *GraphDotOpts
@@ -92,6 +92,10 @@ func (dg *DebugGraph) DebugNode(v interface{}) {
 	dg.Lock()
 	defer dg.Unlock()
 
+	// record the ordinal value for each node
+	ord := dg.ord
+	dg.ord++
+
 	name := graphDotNodeName("root", v)
 
 	var node *dot.Node
@@ -103,7 +107,10 @@ func (dg *DebugGraph) DebugNode(v interface{}) {
 		}
 	}
 
-	dg.buf.WriteString(fmt.Sprintf("%#v\n", dg.Dot))
+	// for now, record the order of visits in the node label
+	if node != nil {
+		node.Attrs["label"] = fmt.Sprintf("%d %s", ord, node.Attrs["label"])
+	}
 
 	// if the node provides debug output, insert it into the graph, and log it
 	if nd, ok := v.(GraphNodeDebugger); ok {
