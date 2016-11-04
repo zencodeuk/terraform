@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"time"
+	"strconv"
 
 	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/resource"
@@ -488,6 +489,35 @@ func resourceAwsOpsworksInstanceValidate(d *schema.ResourceData) error {
 	return nil
 }
 
+func findNewerResource(d *schema.ResourceData, meta interface{}) []*opsworks.Instance {
+	log.Printf("[DEBUG] (Stagecoach) Searching for Potential OpsWorks instance (the original I created has been destroyed)")
+
+	client := meta.(*AWSClient).opsworksconn
+
+	req := &opsworks.DescribeInstancesInput{
+		LayerId: aws.String(d.Get("layer_ids.0").(string)),
+	}
+
+	resp, err := client.DescribeInstances(req)
+	if err != nil {
+		return nil
+	}
+
+	log.Printf("[DEBUG] (Stagecoach) Potential Alternate OpsWorks instance: %d", len(resp.Instances))
+
+	instances := resp.Instances
+
+	if len(instances) > 1 { //we've found more than one, so lets find best match based on host name
+		hostname := d.Get("hostname").(string)
+		hostId, e := strconv.Atoi(hostname[len(hostname)-1:])
+		if e == nil && len(instances) <= hostId {
+			return []*opsworks.Instance{ instances[hostId-1] }
+		}
+	}
+
+	return instances
+}
+
 func resourceAwsOpsworksInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*AWSClient).opsworksconn
 
@@ -497,31 +527,46 @@ func resourceAwsOpsworksInstanceRead(d *schema.ResourceData, meta interface{}) e
 		},
 	}
 
-	log.Printf("[DEBUG] Reading OpsWorks instance: %s", d.Id())
+	log.Printf("[DEBUG] Reading OpsWorks instance %s  %s", d.Get("hostname").(string), d.Id())
 
 	resp, err := client.DescribeInstances(req)
+
+	instances := resp.Instances
+
 	if err != nil {
 		if awserr, ok := err.(awserr.Error); ok {
 			if awserr.Code() == "ResourceNotFoundException" {
-				d.SetId("")
-				return nil
+
+			  instances = findNewerResource(d, meta)
+				if len(instances) == 0 {
+					log.Printf("[DEBUG] (Stagecoach) No Alternate instance discovered")
+					d.SetId("")
+					return nil
+				}
+
 			}
 		}
-		return err
+		if len(instances) == 0 {
+			return err
+		}
 	}
 
 	// If nothing was found, then return no state
-	if len(resp.Instances) == 0 {
+	if len(instances) == 0 {
 		d.SetId("")
 		return nil
+
 	}
-	instance := resp.Instances[0]
+
+	instance := instances[0]
 
 	if instance.InstanceId == nil {
 		d.SetId("")
 		return nil
 	}
 	instanceId := *instance.InstanceId
+
+	log.Printf("[DEBUG] (Stagecoach)(%s) Continuing with resource %s instead of %s", instance.Hostname, instanceId, d.Id())
 
 	d.SetId(instanceId)
 	d.Set("agent_version", instance.AgentVersion)
@@ -993,6 +1038,7 @@ func OpsworksInstanceStateRefreshFunc(conn *opsworks.OpsWorks, instanceID string
 		})
 		if err != nil {
 			if awserr, ok := err.(awserr.Error); ok && awserr.Code() == "ResourceNotFoundException" {
+				log.Printf("[DEBUG] (Stagecoach) Refresh failed here...")
 				// Set this to nil as if we didn't find anything.
 				resp = nil
 			} else {
