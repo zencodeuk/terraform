@@ -159,6 +159,53 @@ VALUE
 }
 ```
 
+### Booleans
+
+Although it appears Terraform supports boolean types, they are instead
+silently converted to string types. The implications of this are subtle and
+should be completely understood if you plan on using boolean values.
+
+It is instead recommended you avoid using boolean values for now and use
+explicit strings. A future version of Terraform will properly support
+booleans and using the current behavior could result in backwards-incompatibilities
+in the future.
+
+For a configuration such as the following:
+
+```
+variable "active" {
+    default = false
+}
+```
+
+The false is converted to a string `"0"` when running Terraform.
+
+Then, depending on where you specify overrides, the behavior can differ:
+
+  * Variables with boolean values in a `tfvars` file will likewise be
+    converted to "0" and "1" values.
+
+  * Variables specified via the `-var` command line flag will be literal
+    strings "true" and "false", so care should be taken to explicitly use
+    "0" or "1".
+
+  * Variables specified with the `TF_VAR_` environment variables will
+    be literal string values, just like `-var`.
+
+A future version of Terraform will fully support first-class boolean
+types which will make the behavior of booleans consistent as you would
+expect. This may break some of the above behavior.
+
+When passing boolean-like variables as parameters to resource configurations
+that expect boolean values, they are converted consistently:
+
+  * "1", "true", "t" all become `true`
+  * "0", "false", "f" all become `false`
+
+The behavior of conversion above will likely not change in future
+Terraform versions. Therefore, simply using string values rather than
+booleans for variables is recommended.
+
 ## Environment Variables
 
 Environment variables can be used to set the value of a variable.
@@ -247,7 +294,39 @@ terraform apply -var-file=foo.tfvars -var-file=bar.tfvars
 on the command line. If a variable is defined in more than one variable file,
 the last value specified is effective.
 
-### Precedence example
+### Variable Merging
+
+When variables are conflicting, map values are merged and all are values are
+overridden. Map values are always merged.
+
+For example, if you set a variable twice on the command line:
+
+```
+terraform apply -var foo=bar -var foo=baz
+```
+
+Then the value of `foo` will be `baz` since it was the last value seen.
+
+However, for maps, the values are merged:
+
+```
+terraform apply -var 'foo={foo="bar"}' -var 'foo={bar="baz"}'
+```
+
+The resulting value of `foo` will be:
+
+```
+{
+  foo = "bar"
+  bar = "baz"
+}
+```
+
+There is no way currently to unset map values in Terraform. Whenever a map
+is modified either via variable input or being passed into a module, the
+values are always merged.
+
+### Variable Precedence
 
 Both these files have the variable `baz` defined:
 

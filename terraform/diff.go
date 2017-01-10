@@ -32,6 +32,30 @@ type Diff struct {
 	Modules []*ModuleDiff
 }
 
+// Prune cleans out unused structures in the diff without affecting
+// the behavior of the diff at all.
+//
+// This is not safe to call concurrently. This is safe to call on a
+// nil Diff.
+func (d *Diff) Prune() {
+	if d == nil {
+		return
+	}
+
+	// Prune all empty modules
+	newModules := make([]*ModuleDiff, 0, len(d.Modules))
+	for _, m := range d.Modules {
+		// If the module isn't empty, we keep it
+		if !m.Empty() {
+			newModules = append(newModules, m)
+		}
+	}
+	if len(newModules) == 0 {
+		newModules = nil
+	}
+	d.Modules = newModules
+}
+
 // AddModule adds the module with the given path to the diff.
 //
 // This should be the preferred method to add module diffs since it
@@ -212,6 +236,10 @@ func (d *ModuleDiff) ChangeType() DiffChangeType {
 
 // Empty returns true if the diff has no changes within this module.
 func (d *ModuleDiff) Empty() bool {
+	if d.Destroy {
+		return false
+	}
+
 	if len(d.Resources) == 0 {
 		return true
 	}
@@ -263,16 +291,22 @@ func (d *ModuleDiff) String() string {
 		switch {
 		case rdiff.RequiresNew() && (rdiff.GetDestroy() || rdiff.GetDestroyTainted()):
 			crud = "DESTROY/CREATE"
-		case rdiff.GetDestroy():
+		case rdiff.GetDestroy() || rdiff.GetDestroyDeposed():
 			crud = "DESTROY"
 		case rdiff.RequiresNew():
 			crud = "CREATE"
 		}
 
+		extra := ""
+		if !rdiff.GetDestroy() && rdiff.GetDestroyDeposed() {
+			extra = " (deposed only)"
+		}
+
 		buf.WriteString(fmt.Sprintf(
-			"%s: %s\n",
+			"%s: %s%s\n",
 			crud,
-			name))
+			name,
+			extra))
 
 		keyLen := 0
 		rdiffAttrs := rdiff.CopyAttributes()
@@ -328,8 +362,12 @@ type InstanceDiff struct {
 	mu             sync.Mutex
 	Attributes     map[string]*ResourceAttrDiff
 	Destroy        bool
+	DestroyDeposed bool
 	DestroyTainted bool
 }
+
+func (d *InstanceDiff) Lock()   { d.mu.Lock() }
+func (d *InstanceDiff) Unlock() { d.mu.Unlock() }
 
 // ResourceAttrDiff is the diff of a single attribute of a resource.
 type ResourceAttrDiff struct {
@@ -375,6 +413,19 @@ func NewInstanceDiff() *InstanceDiff {
 	return &InstanceDiff{Attributes: make(map[string]*ResourceAttrDiff)}
 }
 
+func (d *InstanceDiff) Copy() (*InstanceDiff, error) {
+	if d == nil {
+		return nil, nil
+	}
+
+	dCopy, err := copystructure.Config{Lock: true}.Copy(d)
+	if err != nil {
+		return nil, err
+	}
+
+	return dCopy.(*InstanceDiff), nil
+}
+
 // ChangeType returns the DiffChangeType represented by the diff
 // for this single instance.
 func (d *InstanceDiff) ChangeType() DiffChangeType {
@@ -386,7 +437,7 @@ func (d *InstanceDiff) ChangeType() DiffChangeType {
 		return DiffDestroyCreate
 	}
 
-	if d.GetDestroy() {
+	if d.GetDestroy() || d.GetDestroyDeposed() {
 		return DiffDestroy
 	}
 
@@ -405,7 +456,10 @@ func (d *InstanceDiff) Empty() bool {
 
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	return !d.Destroy && !d.DestroyTainted && len(d.Attributes) == 0
+	return !d.Destroy &&
+		!d.DestroyTainted &&
+		!d.DestroyDeposed &&
+		len(d.Attributes) == 0
 }
 
 // Equal compares two diffs for exact equality.
@@ -438,6 +492,7 @@ func (d *InstanceDiff) GoString() string {
 		Attributes:     d.Attributes,
 		Destroy:        d.Destroy,
 		DestroyTainted: d.DestroyTainted,
+		DestroyDeposed: d.DestroyDeposed,
 	})
 }
 
@@ -470,6 +525,20 @@ func (d *InstanceDiff) requiresNew() bool {
 	}
 
 	return false
+}
+
+func (d *InstanceDiff) GetDestroyDeposed() bool {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	return d.DestroyDeposed
+}
+
+func (d *InstanceDiff) SetDestroyDeposed(b bool) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	d.DestroyDeposed = b
 }
 
 // These methods are properly locked, for use outside other InstanceDiff
@@ -562,13 +631,36 @@ func (d *InstanceDiff) Same(d2 *InstanceDiff) (bool, string) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	if d.Destroy != d2.GetDestroy() {
+	// If we're going from requiring new to NOT requiring new, then we have
+	// to see if all required news were computed. If so, it is allowed since
+	// computed may also mean "same value and therefore not new".
+	oldNew := d.requiresNew()
+	newNew := d2.RequiresNew()
+	if oldNew && !newNew {
+		oldNew = false
+		for _, rd := range d.Attributes {
+			// If the field is requires new and NOT computed, then what
+			// we have is a diff mismatch for sure. We set that the old
+			// diff does REQUIRE a ForceNew.
+			if rd != nil && rd.RequiresNew && !rd.NewComputed {
+				oldNew = true
+				break
+			}
+		}
+	}
+
+	if oldNew != newNew {
+		return false, fmt.Sprintf(
+			"diff RequiresNew; old: %t, new: %t", oldNew, newNew)
+	}
+
+	// Verify that destroy matches. The second boolean here allows us to
+	// have mismatching Destroy if we're moving from RequiresNew true
+	// to false above. Therefore, the second boolean will only pass if
+	// we're moving from Destroy: true to false as well.
+	if d.Destroy != d2.GetDestroy() && d.requiresNew() == oldNew {
 		return false, fmt.Sprintf(
 			"diff: Destroy; old: %t, new: %t", d.Destroy, d2.GetDestroy())
-	}
-	if d.requiresNew() != d2.RequiresNew() {
-		return false, fmt.Sprintf(
-			"diff RequiresNew; old: %t, new: %t", d.requiresNew(), d2.RequiresNew())
 	}
 
 	// Go through the old diff and make sure the new diff has all the
@@ -615,7 +707,7 @@ func (d *InstanceDiff) Same(d2 *InstanceDiff) (bool, string) {
 			// that value is allowed since it may mean the value ended up
 			// being the same.
 			if diffOld.NewComputed {
-				continue
+				ok = true
 			}
 
 			// No exact match, but maybe this is a set containing computed

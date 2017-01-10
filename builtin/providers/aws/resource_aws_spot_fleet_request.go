@@ -324,7 +324,7 @@ func buildSpotFleetLaunchSpecification(d map[string]interface{}, meta interface{
 
 	if v, ok := d["user_data"]; ok {
 		opts.UserData = aws.String(
-			base64.StdEncoding.EncodeToString([]byte(v.(string))))
+			base64Encode([]byte(v.(string))))
 	}
 
 	if v, ok := d["key_name"]; ok {
@@ -375,6 +375,7 @@ func buildSpotFleetLaunchSpecification(d map[string]interface{}, meta interface{
 		// the same request
 		ni := &ec2.InstanceNetworkInterfaceSpecification{
 			AssociatePublicIpAddress: aws.Bool(true),
+			DeleteOnTermination:      aws.Bool(true),
 			DeviceIndex:              aws.Int64(int64(0)),
 			SubnetId:                 aws.String(subnetId.(string)),
 			Groups:                   groupIds,
@@ -657,7 +658,7 @@ func resourceAwsSpotFleetRequestRead(d *schema.ResourceData, meta interface{}) e
 		// If the spot request was not found, return nil so that we can show
 		// that it is gone.
 		ec2err, ok := err.(awserr.Error)
-		if ok && ec2err.Code() == "InvalidSpotFleetRequestID.NotFound" {
+		if ok && ec2err.Code() == "InvalidSpotFleetRequestId.NotFound" {
 			d.SetId("")
 			return nil
 		}
@@ -805,7 +806,7 @@ func launchSpecToMap(
 }
 
 func ebsBlockDevicesToSet(bdm []*ec2.BlockDeviceMapping, rootDevName *string) *schema.Set {
-	set := &schema.Set{F: hashEphemeralBlockDevice}
+	set := &schema.Set{F: hashEbsBlockDevice}
 
 	for _, val := range bdm {
 		if val.Ebs != nil {
@@ -1009,7 +1010,11 @@ func hashLaunchSpecification(v interface{}) int {
 func hashEbsBlockDevice(v interface{}) int {
 	var buf bytes.Buffer
 	m := v.(map[string]interface{})
-	buf.WriteString(fmt.Sprintf("%s-", m["device_name"].(string)))
-	buf.WriteString(fmt.Sprintf("%s-", m["snapshot_id"].(string)))
+	if name, ok := m["device_name"]; ok {
+		buf.WriteString(fmt.Sprintf("%s-", name.(string)))
+	}
+	if id, ok := m["snapshot_id"]; ok {
+		buf.WriteString(fmt.Sprintf("%s-", id.(string)))
+	}
 	return hashcode.String(buf.String())
 }

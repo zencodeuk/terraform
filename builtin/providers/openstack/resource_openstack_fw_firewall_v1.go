@@ -43,13 +43,18 @@ func resourceFWFirewallV1() *schema.Resource {
 			"admin_state_up": &schema.Schema{
 				Type:     schema.TypeBool,
 				Optional: true,
-				Computed: true,
+				Default:  true,
 			},
 			"tenant_id": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 				Computed: true,
+			},
+			"value_specs": &schema.Schema{
+				Type:     schema.TypeMap,
+				Optional: true,
+				ForceNew: true,
 			},
 		},
 	}
@@ -58,19 +63,22 @@ func resourceFWFirewallV1() *schema.Resource {
 func resourceFWFirewallV1Create(d *schema.ResourceData, meta interface{}) error {
 
 	config := meta.(*Config)
-	networkingClient, err := config.networkingV2Client(d.Get("region").(string))
+	networkingClient, err := config.networkingV2Client(GetRegion(d))
 	if err != nil {
 		return fmt.Errorf("Error creating OpenStack networking client: %s", err)
 	}
 
 	adminStateUp := d.Get("admin_state_up").(bool)
 
-	firewallConfiguration := firewalls.CreateOpts{
-		Name:         d.Get("name").(string),
-		Description:  d.Get("description").(string),
-		PolicyID:     d.Get("policy_id").(string),
-		AdminStateUp: &adminStateUp,
-		TenantID:     d.Get("tenant_id").(string),
+	firewallConfiguration := FirewallCreateOpts{
+		firewalls.CreateOpts{
+			Name:         d.Get("name").(string),
+			Description:  d.Get("description").(string),
+			PolicyID:     d.Get("policy_id").(string),
+			AdminStateUp: &adminStateUp,
+			TenantID:     d.Get("tenant_id").(string),
+		},
+		MapValueSpecs(d),
 	}
 
 	log.Printf("[DEBUG] Create firewall: %#v", firewallConfiguration)
@@ -102,7 +110,7 @@ func resourceFWFirewallV1Read(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("[DEBUG] Retrieve information about firewall: %s", d.Id())
 
 	config := meta.(*Config)
-	networkingClient, err := config.networkingV2Client(d.Get("region").(string))
+	networkingClient, err := config.networkingV2Client(GetRegion(d))
 	if err != nil {
 		return fmt.Errorf("Error creating OpenStack networking client: %s", err)
 	}
@@ -119,6 +127,7 @@ func resourceFWFirewallV1Read(d *schema.ResourceData, meta interface{}) error {
 	d.Set("policy_id", firewall.PolicyID)
 	d.Set("admin_state_up", firewall.AdminStateUp)
 	d.Set("tenant_id", firewall.TenantID)
+	d.Set("region", GetRegion(d))
 
 	return nil
 }
@@ -126,7 +135,7 @@ func resourceFWFirewallV1Read(d *schema.ResourceData, meta interface{}) error {
 func resourceFWFirewallV1Update(d *schema.ResourceData, meta interface{}) error {
 
 	config := meta.(*Config)
-	networkingClient, err := config.networkingV2Client(d.Get("region").(string))
+	networkingClient, err := config.networkingV2Client(GetRegion(d))
 	if err != nil {
 		return fmt.Errorf("Error creating OpenStack networking client: %s", err)
 	}
@@ -175,7 +184,7 @@ func resourceFWFirewallV1Delete(d *schema.ResourceData, meta interface{}) error 
 	log.Printf("[DEBUG] Destroy firewall: %s", d.Id())
 
 	config := meta.(*Config)
-	networkingClient, err := config.networkingV2Client(d.Get("region").(string))
+	networkingClient, err := config.networkingV2Client(GetRegion(d))
 	if err != nil {
 		return fmt.Errorf("Error creating OpenStack networking client: %s", err)
 	}

@@ -15,8 +15,10 @@ interpolations are wrapped in `${}`, such as `${var.foo}`.
 The interpolation syntax is powerful and allows you to reference
 variables, attributes of resources, call functions, etc.
 
-You can also perform [simple math](#math) in interpolations, allowing
-you to write expressions such as `${count.index + 1}`.
+You can perform [simple math](#math) in interpolations, allowing
+you to write expressions such as `${count.index + 1}`. And you can
+also use [conditionals](#conditionals) to determine a value based
+on some logic.
 
 You can escape interpolation with double dollar signs: `$${foo}`
 will be rendered as a literal `${foo}`.
@@ -25,24 +27,24 @@ will be rendered as a literal `${foo}`.
 
 There are a variety of available variable references you can use.
 
-### User string variables
+#### User string variables
 
 Use the `var.` prefix followed by the variable name. For example,
 `${var.foo}` will interpolate the `foo` variable value.
 
-### User map variables
+#### User map variables
 
 The syntax is `var.MAP["KEY"]`. For example, `${var.amis["us-east-1"]}`
 would get the value of the `us-east-1` key within the `amis` map
 variable.
 
-### User list variables
+#### User list variables
 
 The syntax is `["${var.LIST}"]`. For example, `["${var.subnets}"]`
 would get the value of the `subnets` list, as a list. You can also
 return list elements by index: `${var.subnets[idx]}`.
 
-### Attributes of your own resource
+#### Attributes of your own resource
 
 The syntax is `self.ATTRIBUTE`. For example `${self.private_ip_address}`
 will interpolate that resource's private IP address.
@@ -50,24 +52,24 @@ will interpolate that resource's private IP address.
 -> **Note**: The `self.ATTRIBUTE` syntax is only allowed and valid within
 provisioners.
 
-### Attributes of other resources
+#### Attributes of other resources
 
 The syntax is `TYPE.NAME.ATTRIBUTE`. For example,
 `${aws_instance.web.id}` will interpolate the ID attribute from the
-`aws\_instance` resource named `web`. If the resource has a `count`
+`aws_instance` resource named `web`. If the resource has a `count`
 attribute set, you can access individual attributes with a zero-based
 index, such as `${aws_instance.web.0.id}`. You can also use the splat
 syntax to get a list of all the attributes: `${aws_instance.web.*.id}`.
 This is documented in more detail in the [resource configuration
 page](/docs/configuration/resources.html).
 
-### Outputs from a module
+#### Outputs from a module
 
 The syntax is `MODULE.NAME.OUTPUT`. For example `${module.foo.bar}` will
 interpolate the `bar` output from the `foo`
 [module](/docs/modules/index.html).
 
-### Count information
+#### Count information
 
 The syntax is `count.FIELD`. For example, `${count.index}` will
 interpolate the current index in a multi-count resource. For more
@@ -76,13 +78,52 @@ page](/docs/configuration/resources.html).
 
 <a id="path-variables"></a>
 
-### Path information
+#### Path information
 
 The syntax is `path.TYPE`. TYPE can be `cwd`, `module`, or `root`.
 `cwd` will interpolate the current working directory. `module` will
 interpolate the path to the current module. `root` will interpolate the
 path of the root module.  In general, you probably want the
 `path.module` variable.
+
+<a id="conditionals"></a>
+## Conditionals
+
+Interpolations may contain conditionals to branch on the final value.
+
+```
+resource "aws_instance" "web" {
+  subnet = "${var.env == "production" ? var.prod_subnet : var.dev_subnet}"
+}
+```
+
+The conditional syntax is the well-known ternary operation:
+
+    CONDITION ? TRUEVAL : FALSEVAL
+
+The condition can be any valid interpolation syntax, such as variable
+access, a function call, or even another conditional. The true and false
+value can also be any valid interpolation syntax. The returned types by
+the true and false side must be the same.
+
+The support operators are:
+
+  * Equality: `==` and `!=`
+  * Numerical comparison: `>`, `<`, `>=`, `<=`
+  * Boolean logic: `&&`, `||`, unary `!`
+
+A common use case for conditionals is to enable/disable a resource by
+conditionally setting the count:
+
+```
+resource "aws_instance" "vpn" {
+  count = "${var.something ? 1 : 0}"
+}
+```
+
+In the example above, the "vpn" resource will only be included if
+"var.something" evaluates to true. Otherwise, the VPN resource will
+not be created at all.
 
 <a id="functions"></a>
 ## Built-in Functions
@@ -116,7 +157,7 @@ The supported built-in functions are:
   * `cidrnetmask(iprange)` - Takes an IP address range in CIDR notation
     and returns the address-formatted subnet mask format that some
     systems expect for IPv4 interfaces. For example,
-    `cidrmask("10.0.0.0/8")` returns `255.0.0.0`. Not applicable
+    `cidrnetmask("10.0.0.0/8")` returns `255.0.0.0`. Not applicable
     to IPv6 networks since CIDR notation is the only valid notation for
     IPv4.
 
@@ -203,7 +244,7 @@ The supported built-in functions are:
       * `${list("a", "b", "c")}` returns a list of `"a", "b", "c"`.
       * `${list()}` returns an empty list.
 
-  * `lookup(map, key [, default])` - Performs a dynamic lookup into a map
+  * `lookup(map, key, [default])` - Performs a dynamic lookup into a map
       variable. The `map` parameter should be another variable, such
       as `var.amis`. If `key` does not exist in `map`, the interpolation will
       fail unless you specify a third argument, `default`, which should be a
@@ -267,6 +308,10 @@ The supported built-in functions are:
       `a_resource_param = ["${split(",", var.CSV_STRING)}"]`.
       Example: `split(",", module.amod.server_ids)`
 
+  * `timestamp()` - Returns a UTC timestamp string in RFC 3339 format. This string will change with every
+   invocation of the function, so in order to prevent diffs on every plan & apply, it must be used with the
+   [`ignore_changes`](/docs/configuration/resources.html#ignore-changes) lifecycle attribute.
+
   * `title(string)` - Returns a copy of the string with the first characters of all the words capitalized.
 
   * `trimspace(string)` - Returns a copy of the string with all leading and trailing white spaces removed.
@@ -299,7 +344,7 @@ A template data source looks like:
 
 ```
 data "template_file" "example" {
-  template = "${hello} ${world}!"
+  template = "$${hello} $${world}!"
   vars {
     hello = "goodnight"
     world = "moon"
@@ -313,7 +358,9 @@ output "rendered" {
 
 Then the rendered value would be `goodnight moon!`.
 
-You may use any of the built-in functions in your template.
+You may use any of the built-in functions in your template. For more
+details on template usage, please see the
+[template_file documentation](/docs/providers/template/d/file.html).
 
 ### Using Templates with Count
 
@@ -379,19 +426,21 @@ The supported operations are:
 - *Add* (`+`), *Subtract* (`-`), *Multiply* (`*`), and *Divide* (`/`) for **float** types
 - *Add* (`+`), *Subtract* (`-`), *Multiply* (`*`), *Divide* (`/`), and *Modulo* (`%`) for **integer** types
 
+Operator precedences is the standard mathematical order of operations:
+*Multiply* (`*`), *Divide* (`/`), and *Modulo* (`%`) have precedence over
+*Add* (`+`) and *Subtract* (`-`). Parenthesis can be used to force ordering.
+
+```
+"${2 * 4 + 3 * 3}" # computes to 17
+"${3 * 3 + 2 * 4}" # computes to 17
+"${2 * (4 + 3) * 3}" # computes to 42
+```
+
+You can use the [terraform console](/docs/commands/console.html) command to
+try the math operations.
+
 -> **Note:** Since Terraform allows hyphens in resource and variable names,
 it's best to use spaces between math operators to prevent confusion or unexpected
 behavior. For example, `${var.instance-count - 1}` will subtract **1** from the
 `instance-count` variable value, while `${var.instance-count-1}` will interpolate
 the `instance-count-1` variable value.
-
-
--> **Note:** Operator precedence is not the usual one where *Multiply* (`*`),
-*Divide* (`/`), and *Modulo* (`%`) have precedence over *Add* (`+`) and *Subtract* (`-`).
-The operations are made in the order they appear. Parenthesis can be used to force ordering :
-```
-"${2 * 4 + 3 * 3}" # computes to 33
-"${3 * 3 + 2 * 4}" # computes to 44
-"${(2 * 4) + (3 * 3)}" # computes to 17
-"${(3 * 3) + (2 * 4)}" # computes to 17
-```

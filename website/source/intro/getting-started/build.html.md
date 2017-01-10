@@ -175,12 +175,15 @@ Apply complete! Resources: 1 added, 0 changed, 0 destroyed.
 Done! You can go to the AWS console to prove to yourself that the
 EC2 instance has been created.
 
-Terraform also put some state into the `terraform.tfstate` file
+Terraform also puts some state into the `terraform.tfstate` file
 by default. This state file is extremely important; it maps various
 resource metadata to actual resource IDs so that Terraform knows
 what it is managing. This file must be saved and distributed
-to anyone who might run Terraform. We recommend simply putting it
-into version control, since it generally isn't too large.
+to anyone who might run Terraform. It is generally recommended to 
+[setup remote state](https://www.terraform.io/docs/state/remote/index.html)
+when working with Terraform. This will mean that any potential secrets
+stored in the state file, will not be checked into version control
+
 
 You can inspect the state using `terraform show`:
 

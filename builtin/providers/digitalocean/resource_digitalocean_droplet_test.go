@@ -255,7 +255,7 @@ func testAccCheckDigitalOceanDropletRenamedAndResized(droplet *godo.Droplet) res
 		}
 
 		if droplet.Disk != 30 {
-			return fmt.Errorf("Bad disk: %s", droplet.Disk)
+			return fmt.Errorf("Bad disk: %d", droplet.Disk)
 		}
 
 		return nil
@@ -270,7 +270,7 @@ func testAccCheckDigitalOceanDropletResizeWithOutDisk(droplet *godo.Droplet) res
 		}
 
 		if droplet.Disk != 20 {
-			return fmt.Errorf("Bad disk: %s", droplet.Disk)
+			return fmt.Errorf("Bad disk: %d", droplet.Disk)
 		}
 
 		return nil
@@ -370,24 +370,6 @@ func testAccCheckDigitalOceanDropletRecreated(t *testing.T,
 		return nil
 	}
 }
-
-// Not sure if this check should remain here as the underlaying
-// function is changed and is tested indirectly by almost all
-// other test already
-//
-//func Test_new_droplet_state_refresh_func(t *testing.T) {
-//	droplet := godo.Droplet{
-//		Name: "foobar",
-//	}
-//	resourceMap, _ := resource_digitalocean_droplet_update_state(
-//		&terraform.InstanceState{Attributes: map[string]string{}}, &droplet)
-//
-//	// See if we can access our attribute
-//	if _, ok := resourceMap.Attributes["name"]; !ok {
-//		t.Fatalf("bad name: %s", resourceMap.Attributes)
-//	}
-//
-//}
 
 var testAccCheckDigitalOceanDropletConfig_basic = fmt.Sprintf(`
 resource "digitalocean_ssh_key" "foobar" {

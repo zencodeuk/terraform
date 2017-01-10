@@ -152,7 +152,7 @@ func resourceAwsElasticacheReplicationGroupCreate(d *schema.ResourceData, meta i
 
 	d.SetId(*resp.ReplicationGroup.ReplicationGroupId)
 
-	pending := []string{"creating", "modifying", "restoring"}
+	pending := []string{"creating", "modifying", "restoring", "snapshotting"}
 	stateConf := &resource.StateChangeConf{
 		Pending:    pending,
 		Target:     []string{"available"},
@@ -456,9 +456,9 @@ func validateAwsElastiCacheReplicationGroupEngine(v interface{}, k string) (ws [
 
 func validateAwsElastiCacheReplicationGroupId(v interface{}, k string) (ws []string, errors []error) {
 	value := v.(string)
-	if (len(value) < 1) || (len(value) > 16) {
+	if (len(value) < 1) || (len(value) > 20) {
 		errors = append(errors, fmt.Errorf(
-			"%q must contain from 1 to 16 alphanumeric characters or hyphens", k))
+			"%q must contain from 1 to 20 alphanumeric characters or hyphens", k))
 	}
 	if !regexp.MustCompile(`^[0-9a-zA-Z-]+$`).MatchString(value) {
 		errors = append(errors, fmt.Errorf(

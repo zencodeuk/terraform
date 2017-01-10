@@ -14,8 +14,17 @@
                 <a href="#">Data Sources</a>
                     <ul class="nav nav-visible">
 
+                        <li<%= sidebar_current("docs-aws-datasource-acm-certificate") %>>
+                            <a href="/docs/providers/aws/d/acm_certificate.html">aws_acm_certificate</a>
+                        </li>
+                        <li<%= sidebar_current("docs-aws-datasource-alb") %>>
+                            <a href="/docs/providers/aws/d/alb.html">aws_alb</a>
+                        </li>
                         <li<%= sidebar_current("docs-aws-datasource-ami") %>>
                             <a href="/docs/providers/aws/d/ami.html">aws_ami</a>
+                        </li>
+                        <li<%= sidebar_current("docs-aws-datasource-alb-listener") %>>
+                            <a href="/docs/providers/aws/d/alb_listener.html">aws_alb_listener</a>
                         </li>
                         <li<%= sidebar_current("docs-aws-datasource-availability-zone") %>>
                             <a href="/docs/providers/aws/d/availability_zone.html">aws_availability_zone</a>
@@ -29,14 +38,29 @@
                         <li<%= sidebar_current("docs-aws-datasource-cloudformation-stack") %>>
                             <a href="/docs/providers/aws/d/cloudformation_stack.html">aws_cloudformation_stack</a>
                         </li>
+                        <li<%= sidebar_current("docs-aws-datasource-ebs-snapshot") %>>
+                          <a href="/docs/providers/aws/d/ebs_snapshot.html">aws_ebs_snapshot</a>
+                        </li>
+                        <li<%= sidebar_current("docs-aws-datasource-ebs-volume") %>>
+                          <a href="/docs/providers/aws/d/ebs_volume.html">aws_ebs_volume</a>
+                        </li>
                         <li<%= sidebar_current("docs-aws-datasource-ecs-container-definition") %>>
                             <a href="/docs/providers/aws/d/ecs_container_definition.html">aws_ecs_container_definition</a>
                         </li>
                         <li<%= sidebar_current("docs-aws-datasource-elb-service-account") %>>
                             <a href="/docs/providers/aws/d/elb_service_account.html">aws_elb_service_account</a>
                         </li>
+                        <li<%= sidebar_current("docs-aws-datasource-route53-zone") %>>
+                          <a href="/docs/providers/aws/d/route53_zone.html">aws_route53_zone</a>
+                        </li>
+                        <li<%= sidebar_current("docs-aws-datasource-iam-account-alias") %>>
+                            <a href="/docs/providers/aws/d/iam_account_alias.html">aws_iam_account_alias</a>
+                        </li>
                         <li<%= sidebar_current("docs-aws-datasource-iam-policy-document") %>>
                             <a href="/docs/providers/aws/d/iam_policy_document.html">aws_iam_policy_document</a>
+                        </li>
+                        <li<%= sidebar_current("docs-aws-iam-server-certificate") %>>
+                          <a href="/docs/providers/aws/d/iam_server_certificate.html">aws_iam_server_certificate</a>
                         </li>
                         <li<%= sidebar_current("docs-aws-datasource-ip_ranges") %>>
                             <a href="/docs/providers/aws/d/ip_ranges.html">aws_ip_ranges</a>
@@ -50,6 +74,12 @@
                         <li<%= sidebar_current("docs-aws-datasource-region") %>>
                             <a href="/docs/providers/aws/d/region.html">aws_region</a>
                         </li>
+                        <li<%= sidebar_current("docs-aws-datasource-route-table") %>>
+                          <a href="/docs/providers/aws/d/route_table.html">aws_route_table</a>
+                        </li>
+                        <li<%= sidebar_current("docs-aws-datasource-route53-zone") %>>
+                          <a href="/docs/providers/aws/d/route53_zone.html">aws_route53_zone</a>
+                        </li>
                         <li<%= sidebar_current("docs-aws-datasource-s3-bucket-object") %>>
                             <a href="/docs/providers/aws/d/s3_bucket_object.html">aws_s3_bucket_object</a>
                         </li>
@@ -61,6 +91,12 @@
                         </li>
                         <li<%= sidebar_current("docs-aws-datasource-vpc") %>>
                             <a href="/docs/providers/aws/d/vpc.html">aws_vpc</a>
+                        </li>
+                        <li<%= sidebar_current("docs-aws-datasource-vpc-endpoint-service") %>>
+                            <a href="/docs/providers/aws/d/vpc_endpoint_service.html">aws_vpc_endpoint_service</a>
+                        </li>
+                        <li<%= sidebar_current("docs-aws-datasource-vpc-peering-connection") %>>
+                            <a href="/docs/providers/aws/d/vpc_peering_connection.html">aws_vpc_peering_connection</a>
                         </li>
                     </ul>
                 </li>
@@ -213,6 +249,10 @@
                             <a href="/docs/providers/aws/r/codedeploy_app.html">aws_codedeploy_app</a>
                         </li>
 
+                        <li<%= sidebar_current("docs-aws-resource-codedeploy-deployment-config") %>>
+                            <a href="/docs/providers/aws/r/codedeploy_deployment_config.html">aws_codedeploy_deployment_config</a>
+                        </li>
+
                         <li<%= sidebar_current("docs-aws-resource-codedeploy-deployment-group") %>>
                             <a href="/docs/providers/aws/r/codedeploy_deployment_group.html">aws_codedeploy_deployment_group</a>
                         </li>
@@ -244,7 +284,7 @@
                 </li>
 
 
-                <li<%= sidebar_current(/^docs-aws-resource-(alb|ami|app|autoscaling|ebs|elb|eip|instance|launch|lb|proxy|spot|volume|placement|key-pair|elb_attachment|load-balancer)/) %>>
+                <li<%= sidebar_current(/^docs-aws-resource-(alb|ami|app|autoscaling|ebs|elb|eip|instance|launch|lb|proxy|snapshot|spot|volume|placement|key-pair|elb_attachment|load-balancer)/) %>>
                     <a href="#">EC2 Resources</a>
                     <ul class="nav nav-visible">
 
@@ -288,6 +328,10 @@
                             <a href="/docs/providers/aws/r/app_cookie_stickiness_policy.html">aws_app_cookie_stickiness_policy</a>
                         </li>
 
+                        <li<%= sidebar_current("docs-aws-resource-autoscaling-attachment") %>>
+                          <a href="/docs/providers/aws/r/autoscaling_attachment.html">aws_autoscaling_attachment</a>
+                        </li>
+
                         <li<%= sidebar_current("docs-aws-resource-autoscaling-group") %>>
                             <a href="/docs/providers/aws/r/autoscaling_group.html">aws_autoscaling_group</a>
                         </li>
@@ -306,6 +350,14 @@
 
                         <li<%= sidebar_current("docs-aws-resource-autoscaling-schedule") %>>
                           <a href="/docs/providers/aws/r/autoscaling_schedule.html">aws_autoscaling_schedule</a>
+                        </li>
+
+                        <li<%= sidebar_current("docs-aws-resource-snapshot-create-volume-permission") %>>
+                          <a href="/docs/providers/aws/r/snapshot_create_volume_permission.html">aws_snapshot_create_volume_permission</a>
+                        </li>
+
+                        <li<%= sidebar_current("docs-aws-resource-ebs-snapshot") %>>
+                          <a href="/docs/providers/aws/r/ebs_snapshot.html">aws_ebs_snapshot</a>
                         </li>
 
                         <li<%= sidebar_current("docs-aws-resource-ebs-volume") %>>
@@ -663,6 +715,25 @@
                   </ul>
               </li>
 
+                <li<%= sidebar_current(/^docs-aws-resource-lightsail/) %>>
+                    <a href="#">Lightsail Resources</a>
+                    <ul class="nav nav-visible">
+
+                        <li<%= sidebar_current("docs-aws-resource-lightsail-domain") %>>
+                          <a href="/docs/providers/aws/r/lightsail_domain.html">aws_lightsail_domain</a>
+                        </li>
+
+                        <li<%= sidebar_current("docs-aws-resource-lightsail-instance") %>>
+                            <a href="/docs/providers/aws/r/lightsail_instance.html">aws_lightsail_instance</a>
+                        </li>
+
+                        <li<%= sidebar_current("docs-aws-resource-lightsail-key-pair") %>>
+                            <a href="/docs/providers/aws/r/lightsail_key_pair.html">aws_lightsail_key_pair</a>
+                        </li>
+
+                    </ul>
+                </li>
+
                 <li<%= sidebar_current(/^docs-aws-resource-opsworks/) %>>
                     <a href="#">OpsWorks Resources</a>
                     <ul class="nav nav-visible">
@@ -713,6 +784,10 @@
 
                         <li<%= sidebar_current("docs-aws-resource-opsworks-rails-app-layer") %>>
                             <a href="/docs/providers/aws/r/opsworks_rails_app_layer.html">aws_opsworks_rails_app_layer</a>
+                        </li>
+
+                        <li<%= sidebar_current("docs-aws-resource-opsworks-rds-db-instance") %>>
+                          <a href="/docs/providers/aws/r/opsworks_rds_db_instance.html">aws_opsworks_rds_db_instance</a>
                         </li>
 
                         <li<%= sidebar_current("docs-aws-resource-opsworks-stack") %>>
@@ -803,25 +878,29 @@
                   <li<%= sidebar_current("docs-aws-resource-waf-webacl") %>>
                     <a href="/docs/providers/aws/r/waf_web_acl.html">aws_waf_web_acl</a>
                   </li>
-                  
+
                   <li<%= sidebar_current("docs-aws-resource-waf-bytematchset") %>>
                     <a href="/docs/providers/aws/r/waf_byte_match_set.html">aws_waf_byte_match_set</a>
                   </li>
-                  
+
                   <li<%= sidebar_current("docs-aws-resource-waf-size-constraint-set") %>>
                     <a href="/docs/providers/aws/r/waf_size_constraint_set.html">aws_waf_size_constraint_set</a>
                   </li>
 
                   <li<%= sidebar_current("docs-aws-resource-waf-rule") %>>
-                    <a href="/docs/providers/aws/r/aws_waf_rule.html">aws_waf_rule</a>
+                    <a href="/docs/providers/aws/r/waf_rule.html">aws_waf_rule</a>
                   </li>
 
                   <li<%= sidebar_current("docs-aws-resource-waf-ipset") %>>
-                    <a href="/docs/providers/aws/r/aws_waf_ipset.html">aws_waf_ipset</a>
+                    <a href="/docs/providers/aws/r/waf_ipset.html">aws_waf_ipset</a>
                   </li>
-                  
+
                   <li<%= sidebar_current("docs-aws-resource-waf-xss-match-set") %>>
                     <a href="/docs/providers/aws/r/waf_xss_match_set.html">aws_waf_xss_match_set</a>
+                  </li>
+
+                  <li<%= sidebar_current("docs-aws-resource-waf-sql-injection-match-set") %>>
+                    <a href="/docs/providers/aws/r/waf_sql_injection_match_set.html">aws_waf_sql_injection_match_set</a>
                   </li>
 
                 </ul>
@@ -897,6 +976,14 @@
 
                         <li<%= sidebar_current("docs-aws-resource-ses-receipt-rule-set") %>>
                             <a href="/docs/providers/aws/r/ses_receipt_rule_set.html">aws_ses_receipt_rule_set</a>
+                        </li>
+
+                        <li<%= sidebar_current("docs-aws-resource-ses-configuration-set") %>>
+                            <a href="/docs/providers/aws/r/ses_configuration_set.html">aws_ses_configuration_set</a>
+                        </li>
+
+                        <li<%= sidebar_current("docs-aws-resource-ses-event-destination") %>>
+                            <a href="/docs/providers/aws/r/ses_event_destination.html">aws_ses_event_destination</a>
                         </li>
 
                     </ul>
@@ -1047,6 +1134,10 @@
 
                         <li<%= sidebar_current("docs-aws-resource-vpc-endpoint") %>>
                             <a href="/docs/providers/aws/r/vpc_endpoint.html">aws_vpc_endpoint</a>
+                        </li>
+
+                        <li<%= sidebar_current("docs-aws-resource-vpc-endpoint-route-table-association") %>>
+                            <a href="/docs/providers/aws/r/vpc_endpoint_route_table_association.html">aws_vpc_endpoint_route_table_association</a>
                         </li>
 
                         <li<%= sidebar_current("docs-aws-resource-vpc-peering") %>>

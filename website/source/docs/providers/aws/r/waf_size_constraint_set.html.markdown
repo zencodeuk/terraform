@@ -6,6 +6,10 @@ description: |-
   Provides a AWS WAF SizeConstraintSet resource.
 ---
 
+# aws\_waf\_size\_constraint\_set
+
+Provides a WAF Size Constraint Set Resource
+
 ## Example Usage
 
 ```
@@ -35,4 +39,4 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `id` - The ID of the WAF ByteMatchSet.
+* `id` - The ID of the WAF SizeConstraintSet.
