@@ -26,8 +26,8 @@ func TestIngnitionUser(t *testing.T) {
 
 		resource "ignition_user" "qux" {
 			name = "qux"
-		}		
-		
+		}
+
 		resource "ignition_config" "test" {
 			users = [
 				"${ignition_user.foo.id}",
@@ -66,7 +66,7 @@ func TestIngnitionUser(t *testing.T) {
 		}
 
 		if u.Create.NoCreateHome != true {
-			return fmt.Errorf("no_create_home, found %q", u.Create.NoCreateHome)
+			return fmt.Errorf("no_create_home, found %t", u.Create.NoCreateHome)
 		}
 
 		if u.Create.PrimaryGroup != "primary_group" {
@@ -78,11 +78,11 @@ func TestIngnitionUser(t *testing.T) {
 		}
 
 		if u.Create.NoUserGroup != true {
-			return fmt.Errorf("no_create_home, found %q", u.Create.NoCreateHome)
+			return fmt.Errorf("no_create_home, found %t", u.Create.NoCreateHome)
 		}
 
 		if u.Create.NoLogInit != true {
-			return fmt.Errorf("no_log_init, found %q", u.Create.NoLogInit)
+			return fmt.Errorf("no_log_init, found %t", u.Create.NoLogInit)
 		}
 
 		if u.Create.Shell != "shell" {
@@ -95,8 +95,8 @@ func TestIngnitionUser(t *testing.T) {
 			return fmt.Errorf("name, found %q", u.Name)
 		}
 
-		if u.Create.Uid != nil {
-			return fmt.Errorf("uid, found %d", *u.Create.Uid)
+		if u.Create != nil {
+			return fmt.Errorf("create struct found")
 		}
 
 		return nil
