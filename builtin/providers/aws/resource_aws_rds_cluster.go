@@ -36,10 +36,19 @@ func resourceAwsRDSCluster() *schema.Resource {
 			},
 
 			"cluster_identifier": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				ForceNew:      true,
+				ConflictsWith: []string{"cluster_identifier_prefix"},
+				ValidateFunc:  validateRdsIdentifier,
+			},
+			"cluster_identifier_prefix": {
 				Type:         schema.TypeString,
-				Required:     true,
+				Optional:     true,
+				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: validateRdsId,
+				ValidateFunc: validateRdsIdentifierPrefix,
 			},
 
 			"cluster_members": {
@@ -114,7 +123,7 @@ func resourceAwsRDSCluster() *schema.Resource {
 			"skip_final_snapshot": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				Default:  true,
+				Default:  false,
 			},
 
 			"master_username": {
@@ -224,6 +233,19 @@ func resourceAwsRdsClusterImport(
 func resourceAwsRDSClusterCreate(d *schema.ResourceData, meta interface{}) error {
 	conn := meta.(*AWSClient).rdsconn
 	tags := tagsFromMapRDS(d.Get("tags").(map[string]interface{}))
+
+	var identifier string
+	if v, ok := d.GetOk("cluster_identifier"); ok {
+		identifier = v.(string)
+	} else {
+		if v, ok := d.GetOk("cluster_identifier_prefix"); ok {
+			identifier = resource.PrefixedUniqueId(v.(string))
+		} else {
+			identifier = resource.PrefixedUniqueId("tf-")
+		}
+
+		d.Set("cluster_identifier", identifier)
+	}
 
 	if _, ok := d.GetOk("snapshot_identifier"); ok {
 		opts := rds.RestoreDBClusterFromSnapshotInput{
@@ -611,6 +633,13 @@ func resourceAwsRDSClusterDelete(d *schema.ResourceData, meta interface{}) error
 
 	log.Printf("[DEBUG] RDS Cluster delete options: %s", deleteOpts)
 	_, err := conn.DeleteDBCluster(&deleteOpts)
+	if err != nil {
+		if awsErr, ok := err.(awserr.Error); ok {
+			if "InvalidDBClusterStateFault" == awsErr.Code() {
+				return fmt.Errorf("RDS Cluster cannot be deleted: %s", awsErr.Message())
+			}
+		}
+	}
 
 	stateConf := &resource.StateChangeConf{
 		Pending:    []string{"available", "deleting", "backing-up", "modifying"},

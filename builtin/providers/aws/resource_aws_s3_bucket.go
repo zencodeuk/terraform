@@ -450,7 +450,7 @@ func resourceAwsS3BucketCreate(d *schema.ResourceData, meta interface{}) error {
 func resourceAwsS3BucketUpdate(d *schema.ResourceData, meta interface{}) error {
 	s3conn := meta.(*AWSClient).s3conn
 	if err := setTagsS3(s3conn, d); err != nil {
-		return err
+		return fmt.Errorf("%q: %s", d.Get("bucket").(string), err)
 	}
 
 	if d.HasChange("policy") {
@@ -728,8 +728,8 @@ func resourceAwsS3BucketRead(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	log.Printf("[DEBUG] S3 Bucket: %s, logging: %v", d.Id(), logging)
+	lcl := make([]map[string]interface{}, 0, 1)
 	if v := logging.LoggingEnabled; v != nil {
-		lcl := make([]map[string]interface{}, 0, 1)
 		lc := make(map[string]interface{})
 		if *v.TargetBucket != "" {
 			lc["target_bucket"] = *v.TargetBucket
@@ -738,9 +738,9 @@ func resourceAwsS3BucketRead(d *schema.ResourceData, meta interface{}) error {
 			lc["target_prefix"] = *v.TargetPrefix
 		}
 		lcl = append(lcl, lc)
-		if err := d.Set("logging", lcl); err != nil {
-			return err
-		}
+	}
+	if err := d.Set("logging", lcl); err != nil {
+		return err
 	}
 
 	// Read the lifecycle configuration
@@ -980,7 +980,7 @@ func resourceAwsS3BucketDelete(d *schema.ResourceData, meta interface{}) error {
 				return resourceAwsS3BucketDelete(d, meta)
 			}
 		}
-		return fmt.Errorf("Error deleting S3 Bucket: %s", err)
+		return fmt.Errorf("Error deleting S3 Bucket: %s %q", err, d.Get("bucket").(string))
 	}
 	return nil
 }
